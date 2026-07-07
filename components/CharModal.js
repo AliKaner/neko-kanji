@@ -4,6 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import { kanaToRomaji } from "@/lib/romaji";
 import { speak } from "@/lib/tts";
 import { wordsStartingWith, wordsContainingKanji } from "@/lib/words";
+import StrokeOrder from "@/components/StrokeOrder";
+
+// Genel çizgi kuralları rehberi
+function StrokeRules() {
+  return (
+    <details className="rules">
+      <summary>📏 Çizgiler nasıl atılmalı? — Temel kurallar</summary>
+      <ol>
+        <li><b>Yukarıdan aşağıya:</b> Çizgiler üstten başlar, aşağı iner (<span className="jp">三</span>).</li>
+        <li><b>Soldan sağa:</b> Yatay çizgiler soldan başlar (<span className="jp">一</span>).</li>
+        <li><b>Önce yatay, sonra dikey:</b> Kesişen çizgilerde yatay önce gelir (<span className="jp">十</span>).</li>
+        <li><b>Önce orta, sonra kenarlar:</b> Simetrik karakterlerde ortadaki çizgi önce (<span className="jp">小</span>).</li>
+        <li><b>Önce dış çerçeve, sonra içi:</b> Kutu gibi şekillerde dış önce çizilir; ama <b>alt kapatma çizgisi en son</b> (<span className="jp">国</span>).</li>
+        <li><b>Sola eğik çizgi, sağa eğikten önce:</b> (<span className="jp">人</span>).</li>
+        <li><b>Karakteri delip geçen çizgiler en son:</b> (<span className="jp">中</span>).</li>
+      </ol>
+      <p className="hint" style={{ marginTop: 8 }}>
+        İpucu: Önce ▶ İzle ile sırayı takip et, sonra aşağıdaki alanda kendin çiz.
+        Numaralar her çizginin <b>başlangıç noktasını</b> gösterir.
+      </p>
+    </details>
+  );
+}
 
 // Yazma pratiği: soluk karakterin üzerinden parmak/fare ile çizme
 function TraceBox({ char }) {
@@ -156,6 +179,21 @@ export default function CharModal({ item, onClose }) {
           </div>
         </div>
 
+        <div className="trace-wrap">
+          <div className="trace-title">
+            🖌️ Çizgi sırası — ▶ İzle ile fırça darbelerini sırayla gör:
+          </div>
+          <div className="stroke-section">
+            {[...displayChar].map((ch) => (
+              <StrokeOrder key={ch} char={ch} />
+            ))}
+          </div>
+        </div>
+
+        <StrokeRules />
+
+        <TraceBox char={displayChar} />
+
         {isKanji && (
           <div className="word-list">
             <div className="trace-title">Örnek kelime:</div>
@@ -172,8 +210,6 @@ export default function CharModal({ item, onClose }) {
           words={words}
           title={isKanji ? "Bu kanjiyi içeren kelimeler:" : "Bu harfle başlayan kelimeler:"}
         />
-
-        <TraceBox char={displayChar} />
       </div>
     </div>
   );
