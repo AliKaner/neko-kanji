@@ -60,6 +60,53 @@ function wordAnswers(item) {
   return [...out].filter(Boolean);
 }
 
+// Cevap açıklaması: TR + EN anlam, okunuşlar (kana + romaji), kelime bilgisi
+function AnswerInfo({ q }) {
+  const item = q.item;
+  const readings = [...(item.on || []), ...(item.kun || [])]
+    .map((r) => {
+      const clean = cleanReading(r);
+      return clean ? `${clean} (${kanaToRomaji(clean)})` : null;
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+  const wordEn = item.ex ? WORDS_EN[item.ex.w] : null;
+
+  return (
+    <div className="ktest-answer">
+      {q.mode === "word" && item.ex && (
+        <div className="jp ktest-answer-word">
+          {item.ex.w} 「{item.ex.r}」{" "}
+          <span className="hint">({kanaToRomaji(item.ex.r)})</span>
+        </div>
+      )}
+      {q.mode === "word" && item.ex && (
+        <div>
+          🇹🇷 <b>{item.ex.m}</b>
+          {wordEn && (
+            <>
+              {" "}· 🇬🇧 <b>{wordEn}</b>
+            </>
+          )}
+        </div>
+      )}
+      {item.m_tr && (
+        <div>
+          🇹🇷 <b>{item.m_tr}</b>
+        </div>
+      )}
+      {item.meanings?.length > 0 && (
+        <div>
+          🇬🇧 <b>{item.meanings.slice(0, 4).join(", ")}</b>
+        </div>
+      )}
+      {readings.length > 0 && (
+        <div className="jp ktest-answer-readings">📖 {readings.join("、")}</div>
+      )}
+    </div>
+  );
+}
+
 export default function KanjiTestPage() {
   const { t } = useI18n();
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -175,9 +222,6 @@ export default function KanjiTestPage() {
     setSession((s) => ({ ...s, total: s.total + 1 }));
   };
 
-  const displayAnswers = question
-    ? [...new Set(question.answers)].slice(0, 6).join(" · ")
-    : "";
 
   return (
     <div>
@@ -234,16 +278,17 @@ export default function KanjiTestPage() {
             </form>
 
             {result === "ok" && (
-              <p className="ktest-ok">{t("ktest.correctMsg")}</p>
+              <>
+                <p className="ktest-ok">{t("ktest.correctMsg")}</p>
+                <AnswerInfo q={question} />
+              </>
             )}
             {result === "no" && (
               <div className="ktest-no">
                 <p className="error-text" style={{ margin: "8px 0 2px" }}>
                   {t("ktest.wrongMsg")}
                 </p>
-                <p style={{ margin: 0 }}>
-                  <b>{displayAnswers}</b>
-                </p>
+                <AnswerInfo q={question} />
               </div>
             )}
             {result === "shown" && (
@@ -251,9 +296,7 @@ export default function KanjiTestPage() {
                 <p className="hint" style={{ margin: "8px 0 2px" }}>
                   {t("ktest.answerIs")}
                 </p>
-                <p style={{ margin: 0 }}>
-                  <b>{displayAnswers}</b>
-                </p>
+                <AnswerInfo q={question} />
               </div>
             )}
 

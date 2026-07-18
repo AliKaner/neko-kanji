@@ -933,6 +933,19 @@ h1 { animation: rise 0.3s ease both; }
   margin: 10px 0 0;
 }
 .ktest-no { text-align: center; }
+.ktest-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.ktest-answer-word { font-size: 1.25rem; }
+.ktest-answer-readings { color: var(--muted); font-size: 0.95rem; }
 .ktest-actions {
   display: flex;
   justify-content: center;
