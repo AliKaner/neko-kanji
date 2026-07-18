@@ -956,11 +956,32 @@ h1 { animation: rise 0.3s ease both; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
   gap: 4px;
-  max-height: 260px;
-  overflow-y: auto;
   padding: 4px;
   border: 1px solid var(--border);
   border-radius: 10px;
+  touch-action: none; /* basılı tut + sürükle seçim için */
+  user-select: none;
+}
+.setup-kanji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.setup-browser { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.setup-browser-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.setup-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 .kana-pick {
   display: flex;
@@ -1153,10 +1174,8 @@ h1 { animation: rise 0.3s ease both; }
   .footer { padding: 18px 12px 28px; }
 
   /* Pratik ayar paneli mobil */
-  .setup-kana-grid {
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-    max-height: 200px;
-  }
+  .setup-kana-grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
+  .setup-kanji-grid { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
   .setup-panel .tabs { gap: 6px; }
   .setup-panel .tab { padding: 7px 12px; font-size: 0.85rem; }
   .setup-custom .nav-search { max-width: none !important; }

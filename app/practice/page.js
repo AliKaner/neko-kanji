@@ -63,12 +63,204 @@ function jlptParam(config) {
 }
 
 // ---------- Ayar Paneli ----------
-function SetupPanel({ config, setConfig }) {
+function KanaPicker({ config, setConfig }) {
+  const { t } = useI18n();
+  // Basılı tutup sürükleyerek seçim: ilk hücrenin yeni durumu sürükleme
+  // boyunca uygulanır (ekleme ya da çıkarma modu).
+  const dragMode = useRef(null); // null | true (ekle) | false (çıkar)
+
+  const applyKana = (h, add) => {
+    setConfig((c) => {
+      const has = c.kanaSel.includes(h);
+      if (add === has) return c;
+      return {
+        ...c,
+        kanaSel: add ? [...c.kanaSel, h] : c.kanaSel.filter((x) => x !== h),
+      };
+    });
+  };
+
+  const cellFromEvent = (e) => {
+    const el = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest?.("[data-kana]");
+    return el?.dataset?.kana || null;
+  };
+
+  const onDown = (e) => {
+    const h = e.target.closest?.("[data-kana]")?.dataset?.kana;
+    if (!h) return;
+    e.preventDefault();
+    dragMode.current = !config.kanaSel.includes(h);
+    applyKana(h, dragMode.current);
+  };
+
+  const onMove = (e) => {
+    if (dragMode.current === null) return;
+    const h = cellFromEvent(e);
+    if (h) applyKana(h, dragMode.current);
+  };
+
+  const endDrag = () => {
+    dragMode.current = null;
+  };
+
+  return (
+    <>
+      <div className="setup-actions">
+        <button
+          className="btn secondary small"
+          onClick={() => setConfig((c) => ({ ...c, kanaSel: [] }))}
+        >
+          {t("practice.clear")}
+        </button>
+        <span className="hint">{t("practice.dragHint")}</span>
+      </div>
+      <div
+        className="setup-kana-grid"
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onPointerLeave={endDrag}
+      >
+        {ALL_KANA.map((k) => (
+          <button
+            key={k.h}
+            data-kana={k.h}
+            className={`kana-pick jp ${config.kanaSel.includes(k.h) ? "on" : ""}`}
+            title={k.r}
+          >
+            {config.sources.includes("hiragana") ? k.h : k.k}
+            <span className="kana-pick-r">{k.r}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// Katalog sayfası gibi gezilebilir kanji seçici (JLPT filtre + arama + sayfa)
+function KanjiBrowser({ config, setConfig }) {
   const { t, lang } = useI18n();
-  const [showKanaPicker, setShowKanaPicker] = useState(false);
-  const [kanjiSearch, setKanjiSearch] = useState("");
-  const [kanjiResults, setKanjiResults] = useState([]);
+  const [bJlpt, setBJlpt] = useState("5");
+  const [bSearch, setBSearch] = useState("");
+  const [bPage, setBPage] = useState(1);
+  const [bData, setBData] = useState(null);
+  const [bLoading, setBLoading] = useState(false);
   const searchTimer = useRef(null);
+
+  const load = async (jlpt, search, page) => {
+    setBLoading(true);
+    try {
+      const res = await fetch(
+        `/api/kanji?jlpt=${jlpt}&search=${encodeURIComponent(search)}&page=${page}&limit=40`
+      );
+      setBData(await res.json());
+    } catch {
+      setBData(null);
+    } finally {
+      setBLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load(bJlpt, bSearch, bPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bJlpt, bPage]);
+
+  const onSearch = (term) => {
+    setBSearch(term);
+    setBPage(1);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => load(bJlpt, term, 1), 300);
+  };
+
+  const isSelected = (c) => config.customKanji.some((x) => x.c === c);
+
+  const toggleKanji = (k) => {
+    setConfig((c) =>
+      isSelected(k.c)
+        ? { ...c, customKanji: c.customKanji.filter((x) => x.c !== k.c) }
+        : { ...c, customKanji: [...c.customKanji, k] }
+    );
+  };
+
+  return (
+    <div className="setup-browser">
+      <div className="setup-browser-controls">
+        <input
+          className="input"
+          value={bSearch}
+          placeholder={t("practice.searchAdd")}
+          onChange={(e) => onSearch(e.target.value)}
+          style={{ flex: "1 1 160px" }}
+        />
+        <div className="tabs" style={{ margin: 0 }}>
+          {["all", ...JLPT].map((l) => (
+            <button
+              key={l}
+              className={`tab ${bJlpt === l ? "active" : ""}`}
+              onClick={() => {
+                setBJlpt(l);
+                setBPage(1);
+              }}
+              style={{ padding: "5px 10px", fontSize: "0.8rem" }}
+            >
+              {l === "all" ? t("practice.all") : `N${l}`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {bLoading ? (
+        <p className="hint">{t("loading")}</p>
+      ) : (
+        <div className="setup-kanji-grid">
+          {(bData?.kanjis || []).map((k) => (
+            <button
+              key={k.c}
+              className={`kana-pick jp ${isSelected(k.c) ? "on" : ""}`}
+              onClick={() => toggleKanji(k)}
+            >
+              {k.c}
+              <span className="kana-pick-r">
+                {lang === "tr" && k.m_tr ? k.m_tr : k.meanings?.[0]}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {bData?.pages > 1 && (
+        <div className="setup-pager">
+          <button
+            className="btn secondary small"
+            disabled={bPage <= 1}
+            onClick={() => setBPage((p) => p - 1)}
+          >
+            ◀
+          </button>
+          <span className="hint">
+            {t("learn.page", { current: bPage, total: bData.pages })}
+          </span>
+          <button
+            className="btn secondary small"
+            disabled={bPage >= bData.pages}
+            onClick={() => setBPage((p) => p + 1)}
+          >
+            ▶
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SetupPanel({ config, setConfig }) {
+  const { t } = useI18n();
+  const [showKanaPicker, setShowKanaPicker] = useState(false);
+  const [showKanjiBrowser, setShowKanjiBrowser] = useState(false);
 
   const toggleSource = (s) => {
     setConfig((c) => {
@@ -81,15 +273,6 @@ function SetupPanel({ config, setConfig }) {
     });
   };
 
-  const toggleKana = (h) => {
-    setConfig((c) => ({
-      ...c,
-      kanaSel: c.kanaSel.includes(h)
-        ? c.kanaSel.filter((x) => x !== h)
-        : [...c.kanaSel, h],
-    }));
-  };
-
   const toggleJlpt = (l) => {
     setConfig((c) => ({
       ...c,
@@ -97,36 +280,6 @@ function SetupPanel({ config, setConfig }) {
         ? c.jlptLevels.filter((x) => x !== l)
         : [...c.jlptLevels, l],
     }));
-  };
-
-  const searchKanji = (term) => {
-    setKanjiSearch(term);
-    clearTimeout(searchTimer.current);
-    if (!term.trim()) {
-      setKanjiResults([]);
-      return;
-    }
-    searchTimer.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/kanji?search=${encodeURIComponent(term.trim())}&limit=8`
-        );
-        const data = await res.json();
-        setKanjiResults(data.kanjis || []);
-      } catch {
-        setKanjiResults([]);
-      }
-    }, 250);
-  };
-
-  const addKanji = (k) => {
-    setConfig((c) =>
-      c.customKanji.some((x) => x.c === k.c)
-        ? c
-        : { ...c, customKanji: [...c.customKanji, k] }
-    );
-    setKanjiSearch("");
-    setKanjiResults([]);
   };
 
   const removeKanji = (c) => {
@@ -164,44 +317,20 @@ function SetupPanel({ config, setConfig }) {
 
       {kanaActive && (
         <div className="setup-row">
-          <button
-            className="btn secondary small"
-            onClick={() => setShowKanaPicker((v) => !v)}
-          >
-            {t("practice.pickChars")} {showKanaPicker ? "▲" : "▼"}
-          </button>
-          <span className="hint">
-            {t("practice.pickCharsHint", {
-              n: config.kanaSel.length || ALL_KANA.length,
-            })}
-          </span>
-          {showKanaPicker && (
-            <>
-              <div className="setup-actions">
-                <button
-                  className="btn secondary small"
-                  onClick={() => setConfig((c) => ({ ...c, kanaSel: [] }))}
-                >
-                  {t("practice.clear")}
-                </button>
-              </div>
-              <div className="setup-kana-grid">
-                {ALL_KANA.map((k) => (
-                  <button
-                    key={k.h}
-                    className={`kana-pick jp ${
-                      config.kanaSel.includes(k.h) ? "on" : ""
-                    }`}
-                    onClick={() => toggleKana(k.h)}
-                    title={k.r}
-                  >
-                    {config.sources.includes("hiragana") ? k.h : k.k}
-                    <span className="kana-pick-r">{k.r}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          <div className="setup-actions">
+            <button
+              className="btn secondary small"
+              onClick={() => setShowKanaPicker((v) => !v)}
+            >
+              {t("practice.pickChars")} {showKanaPicker ? "▲" : "▼"}
+            </button>
+            <span className="hint">
+              {t("practice.pickCharsHint", {
+                n: config.kanaSel.length || ALL_KANA.length,
+              })}
+            </span>
+          </div>
+          {showKanaPicker && <KanaPicker config={config} setConfig={setConfig} />}
         </div>
       )}
 
@@ -229,31 +358,14 @@ function SetupPanel({ config, setConfig }) {
           </div>
 
           <div className="setup-custom">
-            <span className="setup-label">{t("practice.customKanji")}</span>
-            <span className="hint">{t("practice.customHint")}</span>
-            <div className="nav-search" style={{ maxWidth: 320, margin: 0 }}>
-              <input
-                className="nav-search-input"
-                value={kanjiSearch}
-                placeholder={t("practice.searchAdd")}
-                onChange={(e) => searchKanji(e.target.value)}
-              />
-              {kanjiResults.length > 0 && (
-                <div className="nav-search-dropdown">
-                  {kanjiResults.map((k) => (
-                    <button
-                      key={k.c}
-                      className="nav-search-item"
-                      onClick={() => addKanji(k)}
-                    >
-                      <span className="jp">{k.c}</span>
-                      <span className="nav-search-rank">
-                        {lang === "tr" && k.m_tr ? k.m_tr : k.meanings?.[0]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="setup-actions">
+              <button
+                className="btn secondary small"
+                onClick={() => setShowKanjiBrowser((v) => !v)}
+              >
+                {t("practice.customKanji")} {showKanjiBrowser ? "▲" : "▼"}
+              </button>
+              <span className="hint">{t("practice.customHint")}</span>
             </div>
             {config.customKanji.length > 0 && (
               <div className="kchip-row">
@@ -268,6 +380,9 @@ function SetupPanel({ config, setConfig }) {
                   </button>
                 ))}
               </div>
+            )}
+            {showKanjiBrowser && (
+              <KanjiBrowser config={config} setConfig={setConfig} />
             )}
           </div>
         </div>
