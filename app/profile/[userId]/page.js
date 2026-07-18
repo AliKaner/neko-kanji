@@ -27,7 +27,7 @@ function FriendButton({ profile }) {
   const remove = useMutation(api.friends.remove);
   const [error, setError] = useState(null);
 
-  if (profile.isMe) return <span className="hint">{t("profile.itsYou")}</span>;
+  if (profile.isMe) return null;
   if (!profile.signedIn)
     return <Link href="/account">{t("profile.loginToAdd")}</Link>;
 
@@ -152,6 +152,51 @@ function ProgressBar({ value, max, className = "" }) {
   );
 }
 
+function currentStreak(daily) {
+  const byDay = new Map(daily.map((d) => [d.day, d.correct]));
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; ; i++) {
+    const key = new Date(today.getTime() - i * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    if ((byDay.get(key) || 0) > 0) streak++;
+    else if (i === 0) continue; // bugün henüz çalışmamış olabilir, seriyi bozma
+    else break;
+  }
+  return streak;
+}
+
+function Badges({ stats, starCounts, daily }) {
+  const { t } = useI18n();
+  const streak = currentStreak(daily);
+  const badges = [
+    { key: "badge.first", icon: "🐣", earned: stats.learned >= 1 },
+    { key: "badge.k100", icon: "📚", earned: stats.learned >= 100 },
+    { key: "badge.k500", icon: "🎯", earned: stats.learned >= 500 },
+    { key: "badge.k1000", icon: "🏔", earned: stats.learned >= 1000 },
+    { key: "badge.all", icon: "🗾", earned: stats.learned >= TOTAL_KANJI },
+    { key: "badge.s100", icon: "⭐", earned: stats.score >= 100 },
+    { key: "badge.s500", icon: "💫", earned: stats.score >= 500 },
+    { key: "badge.gold10", icon: "🥇", earned: starCounts[4] >= 10 },
+    { key: "badge.streak7", icon: "🔥", earned: streak >= 7 },
+  ];
+  return (
+    <div className="badge-grid">
+      {badges.map((b) => (
+        <div
+          key={b.key}
+          className={`badge-hex-wrap ${b.earned ? "earned" : "locked"}`}
+          title={t(b.key)}
+        >
+          <div className="badge-hex">{b.earned ? b.icon : "🔒"}</div>
+          <span className="badge-name">{t(b.key)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DailyMap({ daily }) {
   const { t } = useI18n();
   const cells = useMemo(() => {
@@ -166,7 +211,8 @@ function DailyMap({ daily }) {
     return out;
   }, [daily]);
 
-  const cls = (n) => (n === 0 ? "d0" : n < 5 ? "d1" : n < 15 ? "d2" : n < 30 ? "d3" : "d4");
+  const cls = (n) =>
+    n === 0 ? "d0" : n < 5 ? "d1" : n < 15 ? "d2" : n < 30 ? "d3" : "d4";
 
   return (
     <div>
@@ -191,7 +237,10 @@ function ActivityFeed({ activities }) {
   const text = (a) => {
     switch (a.type) {
       case "kanji":
-        return t("act.kanji", { char: a.char, levelName: t(`level.${a.level}`) });
+        return t("act.kanji", {
+          char: a.char,
+          levelName: t(`level.${a.level}`),
+        });
       case "level":
         return t("act.level", { n: a.level });
       case "friend":
@@ -205,14 +254,22 @@ function ActivityFeed({ activities }) {
     }
   };
   const icon = (a) =>
-    a.type === "kanji" ? "🈷" : a.type === "level" ? "⬆️" : a.type === "friend" ? "🤝" : "🏆";
+    a.type === "kanji"
+      ? "🈷"
+      : a.type === "level"
+      ? "⬆️"
+      : a.type === "friend"
+      ? "🤝"
+      : "🏆";
   return (
     <div className="activity-list">
       {activities.map((a, i) => (
         <div key={i} className="activity-row">
           <span className="activity-icon">{icon(a)}</span>
           <span className="activity-text">
-            {a.type === "kanji" && <span className="jp activity-char">{a.char}</span>}
+            {a.type === "kanji" && (
+              <span className="jp activity-char">{a.char}</span>
+            )}
             {text(a)}
           </span>
           <span className="activity-time hint">{timeAgo(a.time, t)}</span>
@@ -223,7 +280,7 @@ function ActivityFeed({ activities }) {
 }
 
 export default function ProfilePage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const params = useParams();
   const profile = useQuery(api.users.profile, {
     userId: String(params.userId),
@@ -250,9 +307,15 @@ export default function ProfilePage() {
   const s = profile.stats;
   const xpInLevel = s.xp - s.levelStartXp;
   const xpNeeded = s.nextLevelXp - s.levelStartXp;
+  const handle =
+    "@" + (profile.name || "").toLowerCase().replace(/[^a-z0-9ğüşöçı]/g, "");
+  const joined = new Date(profile.memberSince).toLocaleDateString(
+    lang === "en" ? "en-GB" : "tr-TR",
+    { year: "numeric", month: "long" }
+  );
 
   return (
-    <div>
+    <div className="profile-page">
       <div
         className="profile-banner"
         style={
@@ -271,72 +334,104 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="profile-head profile-head-overlap">
-        <div className="avatar-wrap">
-          {profile.avatarUrl ? (
-            <img className="avatar-img" src={profile.avatarUrl} alt="" />
-          ) : (
-            <div className="avatar avatar-lg">
-              {(profile.name || "?").slice(0, 1).toUpperCase()}
-            </div>
-          )}
-          {profile.isMe && (
-            <div className="avatar-action">
-              <ImageUploadButton kind="avatar" label={t("profile.changeAvatar")} />
-            </div>
-          )}
+      <div className="profile-header card">
+        <div className="profile-header-top">
+          <div className="avatar-wrap">
+            {profile.avatarUrl ? (
+              <img className="avatar-img" src={profile.avatarUrl} alt="" />
+            ) : (
+              <div className="avatar">
+                {(profile.name || "?").slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="profile-header-actions">
+            {profile.isMe ? (
+              <ImageUploadButton
+                kind="avatar"
+                label={t("profile.changeAvatar")}
+              />
+            ) : (
+              <FriendButton profile={profile} />
+            )}
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <h1 style={{ margin: 0 }}>{profile.name}</h1>
-          <p className="level-line">
-            <span className="level-badge">
-              {t("profile.level")} {s.level}
-            </span>{" "}
-            <span className="level-title">{t(s.titleKey)}</span>
-          </p>
-          <ProgressBar value={xpInLevel} max={xpNeeded} className="xp" />
-          <p className="hint" style={{ margin: "4px 0 8px" }}>
-            ⚡ {s.xp} XP · {t("profile.toNext", { n: s.nextLevelXp - s.xp, l: s.level + 1 })}
-          </p>
-          <FriendButton profile={profile} />
-        </div>
-      </div>
 
-      <div className="profile-grid">
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>📚 {t("profile.kanjiProgress")}</h2>
-          <p>
-            <b>{s.learned}</b> / {TOTAL_KANJI} {t("stats.kanji")} ·{" "}
-            {t("stats.next")}: <b>#{s.position}</b>
-          </p>
-          <ProgressBar value={s.learned} max={TOTAL_KANJI} className="kanji" />
+        <h1 className="profile-name">{profile.name}</h1>
+        <p className="profile-handle">
+          {handle} · <span className="level-title">{t(s.titleKey)}</span>
+        </p>
+        <p className="hint">{t("profile.joined", { d: joined })}</p>
+
+        <div className="profile-stats-row">
+          <span>
+            <b>{s.learned}</b> {t("stats.kanji")}
+          </span>
+          <span>
+            <b>{s.score}</b> ⭐
+          </span>
+          <span>
+            <b>{profile.friendsCount}</b> {t("profile.friendsCount")}
+          </span>
+          <span>
+            <b>{profile.groupsCount}</b> {t("profile.groupsCount")}
+          </span>
         </div>
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>⭐ {t("profile.starProgress")}</h2>
-          <p>
-            {t("stats.score")}: <b>{s.score}</b>
-          </p>
-          <div className="star-breakdown">
-            <span className="star-chip lv1">{starCounts[1]}</span>
-            <span className="star-chip lv2">{starCounts[2]}</span>
-            <span className="star-chip lv3">{starCounts[3]}</span>
-            <span className="star-chip lv4">{starCounts[4]}</span>
+
+        <div className="level-row">
+          <span className="level-badge">
+            {t("profile.level")} {s.level}
+          </span>
+          <div style={{ flex: 1 }}>
+            <ProgressBar value={xpInLevel} max={xpNeeded} className="xp" />
+            <span className="hint" style={{ fontSize: "0.78rem" }}>
+              ⚡ {s.xp} XP ·{" "}
+              {t("profile.toNext", { n: s.nextLevelXp - s.xp, l: s.level + 1 })}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <h2 style={{ marginTop: 0 }}>{t("profile.daily")}</h2>
-        <DailyMap daily={profile.daily} />
-      </div>
+      <div className="profile-columns">
+        <div className="profile-side">
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>{t("profile.badges")}</h2>
+            <Badges stats={s} starCounts={starCounts} daily={profile.daily} />
+          </div>
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>⭐ {t("profile.starProgress")}</h2>
+            <div className="star-breakdown">
+              <span className="star-chip lv1">{starCounts[1]}</span>
+              <span className="star-chip lv2">{starCounts[2]}</span>
+              <span className="star-chip lv3">{starCounts[3]}</span>
+              <span className="star-chip lv4">{starCounts[4]}</span>
+            </div>
+          </div>
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>📚 {t("profile.kanjiProgress")}</h2>
+            <p>
+              <b>{s.learned}</b> / {TOTAL_KANJI} · {t("stats.next")}:{" "}
+              <b>#{s.position}</b>
+            </p>
+            <ProgressBar value={s.learned} max={TOTAL_KANJI} className="kanji" />
+          </div>
+        </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <h2 style={{ marginTop: 0 }}>{t("profile.activity")}</h2>
-        <ActivityFeed activities={profile.activities} />
+        <div className="profile-main">
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>{t("profile.daily")}</h2>
+            <DailyMap daily={profile.daily} />
+          </div>
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>{t("profile.activity")}</h2>
+            <ActivityFeed activities={profile.activities} />
+          </div>
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>{t("profile.map")}</h2>
+            <KanjiHeatmap countByRank={countByRank} compact />
+          </div>
+        </div>
       </div>
-
-      <h2 style={{ marginTop: 24 }}>{t("profile.map")}</h2>
-      <KanjiHeatmap countByRank={countByRank} />
     </div>
   );
 }

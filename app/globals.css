@@ -658,10 +658,10 @@ h1 { font-size: 1.5rem; margin: 8px 0 4px; }
   border-radius: 6px;
 }
 
-/* ---------- Profil ---------- */
+/* ---------- Profil (Twitter + HackerRank tarzı) ---------- */
 .profile-banner {
-  height: 180px;
-  border-radius: 16px;
+  height: 220px;
+  border-radius: 16px 16px 0 0;
   background: linear-gradient(120deg, var(--accent), #7d5ba6 60%, #b5382f);
   background-size: cover;
   background-position: center;
@@ -669,25 +669,24 @@ h1 { font-size: 1.5rem; margin: 8px 0 4px; }
   animation: rise 0.35s ease both;
 }
 .banner-actions { position: absolute; right: 12px; bottom: 12px; }
-.profile-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  flex-wrap: wrap;
+.profile-header {
+  border-radius: 0 0 16px 16px !important;
+  margin-top: 0;
+  padding-top: 0 !important;
 }
-.profile-head-overlap { margin-top: -44px; padding: 0 20px; }
-.avatar-wrap {
+.profile-header-top {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: flex-end;
+  min-height: 60px;
 }
+.avatar-wrap { margin-top: -56px; }
 .avatar,
 .avatar-img {
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
-  border: 4px solid var(--bg);
+  border: 4px solid var(--card);
   box-shadow: var(--shadow);
   flex-shrink: 0;
 }
@@ -697,11 +696,74 @@ h1 { font-size: 1.5rem; margin: 8px 0 4px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.2rem;
+  font-size: 2.6rem;
   font-weight: 700;
 }
 .avatar-img { object-fit: cover; background: var(--card); }
-.profile-head-overlap h1 { margin-top: 48px; }
+.profile-header-actions { padding: 10px 0 4px; }
+.profile-name { margin: 10px 0 0; font-size: 1.5rem; }
+.profile-handle { margin: 2px 0; color: var(--muted); font-weight: 600; }
+.profile-stats-row {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+  font-size: 0.98rem;
+}
+.profile-stats-row b { font-size: 1.1rem; }
+.level-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.profile-columns {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .profile-columns { grid-template-columns: 1fr; }
+}
+.profile-side,
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.badge-hex-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.badge-hex {
+  width: 58px;
+  height: 64px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  background: linear-gradient(150deg, #fbbf24, #f59e0b);
+  transition: transform 0.15s ease;
+}
+.badge-hex-wrap.earned .badge-hex:hover { transform: scale(1.12) rotate(3deg); }
+.badge-hex-wrap.locked .badge-hex {
+  background: rgba(128, 128, 128, 0.2);
+  filter: grayscale(1);
+  font-size: 1.2rem;
+}
+.badge-hex-wrap.locked { opacity: 0.55; }
+.badge-name { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
 .level-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
 .level-badge {
   background: var(--accent);

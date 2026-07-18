@@ -80,6 +80,24 @@ export const profile = query({
       .order("desc")
       .take(12);
 
+    const sent = await ctx.db
+      .query("friendships")
+      .withIndex("by_requester", (q) => q.eq("requesterId", userId))
+      .collect();
+    const received = await ctx.db
+      .query("friendships")
+      .withIndex("by_addressee", (q) => q.eq("addresseeId", userId))
+      .collect();
+    const friendsCount = [...sent, ...received].filter(
+      (f) => f.status === "accepted"
+    ).length;
+    const groupsCount = (
+      await ctx.db
+        .query("groupMembers")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect()
+    ).length;
+
     const daily = await ctx.db
       .query("dailyStats")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -95,6 +113,9 @@ export const profile = query({
         ? await ctx.storage.getUrl(user.wallpaperId)
         : null,
       stats,
+      friendsCount,
+      groupsCount,
+      memberSince: user._creationTime,
       map: rows.map((r) => ({ rank: r.rank, count: r.count })),
       friendship,
       activities: activities.map((a) => ({
