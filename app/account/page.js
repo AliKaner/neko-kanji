@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useI18n } from "@/lib/i18n";
 
 function AuthForm() {
+  const { t } = useI18n();
   const { signIn } = useAuthActions();
   const [flow, setFlow] = useState("signIn");
   const [error, setError] = useState(null);
@@ -20,11 +22,7 @@ function AuthForm() {
     try {
       await signIn("password", formData);
     } catch (err) {
-      setError(
-        flow === "signIn"
-          ? "Giriş başarısız. E-posta veya şifre hatalı."
-          : "Kayıt başarısız. Şifre en az 8 karakter olmalı; bu e-posta zaten kayıtlı olabilir."
-      );
+      setError(flow === "signIn" ? t("account.signInErr") : t("account.signUpErr"));
     } finally {
       setBusy(false);
     }
@@ -37,20 +35,20 @@ function AuthForm() {
           className={`tab ${flow === "signIn" ? "active" : ""}`}
           onClick={() => setFlow("signIn")}
         >
-          Giriş Yap
+          {t("account.signIn")}
         </button>
         <button
           className={`tab ${flow === "signUp" ? "active" : ""}`}
           onClick={() => setFlow("signUp")}
         >
-          Kayıt Ol
+          {t("account.signUp")}
         </button>
       </div>
       <form onSubmit={submit} className="auth-form">
         {flow === "signUp" && (
           <input
             name="name"
-            placeholder="Adın (arkadaşların böyle görecek)"
+            placeholder={t("account.name")}
             required
             className="input"
           />
@@ -58,21 +56,21 @@ function AuthForm() {
         <input
           name="email"
           type="email"
-          placeholder="E-posta"
+          placeholder={t("account.email")}
           required
           className="input"
         />
         <input
           name="password"
           type="password"
-          placeholder="Şifre (en az 8 karakter)"
+          placeholder={t("account.password")}
           required
           minLength={8}
           className="input"
         />
         {error && <p className="error-text">{error}</p>}
         <button className="btn" type="submit" disabled={busy}>
-          {busy ? "..." : flow === "signIn" ? "Giriş Yap" : "Kayıt Ol"}
+          {busy ? "..." : flow === "signIn" ? t("account.signIn") : t("account.signUp")}
         </button>
       </form>
     </div>
@@ -80,37 +78,39 @@ function AuthForm() {
 }
 
 function AccountInfo() {
+  const { t } = useI18n();
   const { signOut } = useAuthActions();
   const viewer = useQuery(api.users.viewer);
   const stats = useQuery(api.progress.myStats);
 
   return (
     <div className="card" style={{ maxWidth: 420, margin: "0 auto" }}>
-      <h2 style={{ marginTop: 0 }}>👤 {viewer?.name || viewer?.email || "..."}</h2>
+      <h2 style={{ marginTop: 0 }}>
+        👤 {viewer?.name || viewer?.email || "..."}
+      </h2>
       <p className="hint">{viewer?.email}</p>
       {stats && (
         <p>
-          📚 <b>{stats.learned}</b> kanji öğrenildi · sırada{" "}
-          <b>#{stats.position}</b> · puan <b>{stats.score}</b>
+          📚 <b>{stats.learned}</b> {t("stats.kanji")} · {t("stats.at")}{" "}
+          <b>#{stats.position}</b> · ⭐ <b>{stats.score}</b>
         </p>
       )}
       <button className="btn secondary" onClick={() => void signOut()}>
-        Çıkış Yap
+        {t("account.signOut")}
       </button>
     </div>
   );
 }
 
 export default function AccountPage() {
+  const { t } = useI18n();
   const { isAuthenticated, isLoading } = useConvexAuth();
   return (
     <div>
-      <h1>👤 Hesap</h1>
-      <p className="subtitle">
-        Üye ol; kanji ilerlemen kaydedilsin, arkadaşlarınla ve gruplarla yarış.
-      </p>
+      <h1>{t("account.title")}</h1>
+      <p className="subtitle">{t("account.subtitle")}</p>
       {isLoading ? (
-        <p className="hint">Yükleniyor...</p>
+        <p className="hint">{t("loading")}</p>
       ) : isAuthenticated ? (
         <AccountInfo />
       ) : (

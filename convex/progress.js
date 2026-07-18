@@ -57,30 +57,3 @@ export const myStats = query({
   },
 });
 
-// Bir arkadaşın haritasını görüntülemek için (sadece arkadaşlara açık).
-export const mapOf = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    const me = await getAuthUserId(ctx);
-    if (!me) return null;
-    if (me !== userId) {
-      const a = await ctx.db
-        .query("friendships")
-        .withIndex("by_requester", (q) => q.eq("requesterId", me))
-        .filter((q) => q.eq(q.field("addresseeId"), userId))
-        .unique();
-      const b = await ctx.db
-        .query("friendships")
-        .withIndex("by_requester", (q) => q.eq("requesterId", userId))
-        .filter((q) => q.eq(q.field("addresseeId"), me))
-        .unique();
-      const friendship = a || b;
-      if (!friendship || friendship.status !== "accepted") return null;
-    }
-    const rows = await ctx.db
-      .query("progress")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    return rows.map((r) => ({ rank: r.rank, count: r.count }));
-  },
-});

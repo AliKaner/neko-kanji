@@ -4,19 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-
-const LEVEL_NAMES = ["Öğrenilmedi", "Mavi", "Yeşil", "Mor", "Altın"];
-const THRESHOLD_TEXT = "1+ mavi · 5+ yeşil · 10+ mor · 20+ altın";
-
-function levelOf(count) {
-  if (count >= 20) return 4;
-  if (count >= 10) return 3;
-  if (count >= 5) return 2;
-  if (count >= 1) return 1;
-  return 0;
-}
+import { useI18n } from "@/lib/i18n";
+import KanjiHeatmap, { levelOf } from "@/components/KanjiHeatmap";
 
 export default function KanjiMapPage() {
+  const { t } = useI18n();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const kanjiList = useQuery(api.kanji.list);
   const myMap = useQuery(api.progress.myMap);
@@ -30,22 +22,20 @@ export default function KanjiMapPage() {
   }, [myMap]);
 
   if (isLoading || kanjiList === undefined) {
-    return <p className="hint">Yükleniyor...</p>;
+    return <p className="hint">{t("loading")}</p>;
   }
 
   return (
     <div>
-      <h1>🗾 Kanji Haritası</h1>
+      <h1>{t("kanji.title")}</h1>
       <p className="subtitle">
-        En sık kullanılan {kanjiList.length} kanji, frekans sırasıyla. Bir
-        kanjiyi her doğru bildiğinde karesi renklenir: {THRESHOLD_TEXT}.
+        {t("kanji.subtitle", { n: kanjiList.length, t: t("thresholds") })}
       </p>
 
       {!isAuthenticated && (
         <div className="card">
           <p>
-            İlerlemenin kaydedilmesi için{" "}
-            <Link href="/account">giriş yapman</Link> gerekiyor.
+            <Link href="/account">{t("needLogin")}</Link>
           </p>
         </div>
       )}
@@ -53,61 +43,49 @@ export default function KanjiMapPage() {
       {isAuthenticated && stats && (
         <div className="kanji-stats">
           <span>
-            📚 Öğrenilen: <b>{stats.learned}</b> / {kanjiList.length}
+            📚 {t("stats.learned")}: <b>{stats.learned}</b> / {kanjiList.length}
           </span>
           <span>
-            📍 Sıradaki kanji: <b>#{stats.position}</b>
+            📍 {t("stats.next")}: <b>#{stats.position}</b>
           </span>
           <span>
-            ⭐ Puan: <b>{stats.score}</b>
+            ⭐ {t("stats.score")}: <b>{stats.score}</b>
           </span>
         </div>
       )}
 
       <div className="kanji-legend">
-        {LEVEL_NAMES.map((name, lv) => (
+        {[0, 1, 2, 3, 4].map((lv) => (
           <span key={lv} className="legend-item">
-            <span className={`kcell lv${lv}`} /> {name}
+            <span className={`kcell lv${lv}`} /> {t(`level.${lv}`)}
           </span>
         ))}
       </div>
 
-      <div className="kanji-map jp">
-        {kanjiList.map(({ rank, char }) => {
-          const count = countByRank.get(rank) || 0;
-          return (
-            <button
-              key={rank}
-              className={`kcell lv${levelOf(count)} ${
-                selected?.rank === rank ? "selected" : ""
-              }`}
-              title={`#${rank} ${char} — ${count} kez doğru`}
-              onClick={() => setSelected({ rank, char, count })}
-            >
-              {char}
-            </button>
-          );
-        })}
-      </div>
+      <KanjiHeatmap
+        countByRank={countByRank}
+        onSelect={setSelected}
+        selectedRank={selected?.rank}
+      />
 
       {selected && (
         <div className="kanji-detail card">
           <span className="kanji-detail-char jp">{selected.char}</span>
           <div>
             <div>
-              <b>#{selected.rank}</b>. sıklıkta ·{" "}
-              <b>{selected.count}</b> kez doğru bildin ·{" "}
-              {LEVEL_NAMES[levelOf(selected.count)]}
+              <b>#{selected.rank}</b> {t("kanji.freqRank")} ·{" "}
+              <b>{selected.count}</b> {t("kanji.timesCorrect")} ·{" "}
+              {t(`level.${levelOf(selected.count)}`)}
             </div>
             <div className="hint">
-              Pratikte doğru bildikçe seviye atlar. {THRESHOLD_TEXT}
+              {t("kanji.levelHint")} {t("thresholds")}
             </div>
             <Link
               className="btn secondary small"
               href={`/dictionary?q=${encodeURIComponent(selected.char)}`}
               style={{ marginTop: 6, display: "inline-block" }}
             >
-              🔍 Sözlükte ara
+              {t("kanji.searchDict")}
             </Link>
           </div>
         </div>

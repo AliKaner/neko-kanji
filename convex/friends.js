@@ -1,34 +1,17 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { statsOf } from "./helpers";
+import { statsOf, findFriendship } from "./helpers";
 
-async function findFriendship(ctx, a, b) {
-  const x = await ctx.db
-    .query("friendships")
-    .withIndex("by_requester", (q) => q.eq("requesterId", a))
-    .filter((q) => q.eq(q.field("addresseeId"), b))
-    .unique();
-  if (x) return x;
-  return await ctx.db
-    .query("friendships")
-    .withIndex("by_requester", (q) => q.eq("requesterId", b))
-    .filter((q) => q.eq(q.field("addresseeId"), a))
-    .unique();
-}
-
-export const sendRequest = mutation({
-  args: { email: v.string() },
-  handler: async (ctx, { email }) => {
+export const sendRequestTo = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
     const me = await getAuthUserId(ctx);
     if (!me) throw new Error("Giriş yapmalısın.");
-    const target = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", email.toLowerCase().trim()))
-      .unique();
-    if (!target) throw new Error("Bu e-posta ile kayıtlı kullanıcı bulunamadı.");
-    if (target._id === me) throw new Error("Kendini arkadaş olarak ekleyemezsin.");
-    const existing = await findFriendship(ctx, me, target._id);
+    if (userId === me) throw new Error("Kendini arkadaş olarak ekleyemezsin.");
+    const target = await ctx.db.get(userId);
+    if (!target) throw new Error("Kullanıcı bulunamadı.");
+    const existing = await findFriendship(ctx, me, userId);
     if (existing) {
       throw new Error(
         existing.status === "accepted"
@@ -38,7 +21,7 @@ export const sendRequest = mutation({
     }
     await ctx.db.insert("friendships", {
       requesterId: me,
-      addresseeId: target._id,
+      addresseeId: userId,
       status: "pending",
     });
   },
@@ -96,7 +79,6 @@ export const overview = query({
         friendshipId: f._id,
         userId: otherId,
         name: other.name || other.email,
-        email: other.email,
       };
       if (f.status === "accepted") {
         friends.push({ ...base, stats: await statsOf(ctx, otherId) });

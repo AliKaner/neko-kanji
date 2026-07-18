@@ -1,18 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { speak } from "@/lib/tts";
 import { kanaToRomaji } from "@/lib/romaji";
 
-export default function DictionaryPage() {
-  const [query, setQuery] = useState("");
+function DictionaryInner() {
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const [query, setQuery] = useState(initialQ);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const search = async (e) => {
+  useEffect(() => {
+    if (initialQ) {
+      setQuery(initialQ);
+      doSearch(initialQ);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQ]);
+
+  const search = (e) => {
     e?.preventDefault();
-    const q = query.trim();
+    doSearch(query.trim());
+  };
+
+  const doSearch = async (q) => {
     if (!q) return;
     setLoading(true);
     setError(null);
@@ -104,5 +118,13 @@ export default function DictionaryPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DictionaryPage() {
+  return (
+    <Suspense fallback={<p className="hint">...</p>}>
+      <DictionaryInner />
+    </Suspense>
   );
 }

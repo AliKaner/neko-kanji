@@ -9,6 +9,21 @@ export function levelOf(count) {
   return 0;
 }
 
+// İki kullanıcı arasındaki arkadaşlık kaydını (her iki yönde) bulur.
+export async function findFriendship(ctx, a, b) {
+  const x = await ctx.db
+    .query("friendships")
+    .withIndex("by_requester", (q) => q.eq("requesterId", a))
+    .filter((q) => q.eq(q.field("addresseeId"), b))
+    .unique();
+  if (x) return x;
+  return await ctx.db
+    .query("friendships")
+    .withIndex("by_requester", (q) => q.eq("requesterId", b))
+    .filter((q) => q.eq(q.field("addresseeId"), a))
+    .unique();
+}
+
 // Bir kullanıcının özet istatistikleri: öğrenilen kanji sayısı, puan,
 // frekans sırasında kesintisiz gelinen nokta.
 export async function statsOf(ctx, userId) {

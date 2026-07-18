@@ -15,6 +15,7 @@ import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as kanji from "../kanji.js";
 import type * as progress from "../progress.js";
+import type * as search from "../search.js";
 import type * as users from "../users.js";
 
 import type {
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   kanji: typeof kanji;
   progress: typeof progress;
+  search: typeof search;
   users: typeof users;
 }>;
 
