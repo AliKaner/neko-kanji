@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Sözlük — Japonca Kelime Arama",
+  title: "Dictionary — Japanese Word Lookup",
   description:
-    "Japonca, romaji veya İngilizce kelime ara; okunuş, JLPT seviyesi ve anlamlarını gör.",
+    "Search words in Japanese, romaji or English; see readings, JLPT levels and definitions.",
   alternates: { canonical: "/dictionary" },
 };
 

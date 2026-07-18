@@ -19,24 +19,24 @@ const zenMaru = Zen_Maru_Gothic({
 const SITE_URL = "https://japanese-teacher-delta.vercel.app";
 const SITE_NAME = "猫漢字 Neko Kanji";
 const SITE_DESC =
-  "Hiragana, katakana ve en sık kullanılan 2500 kanjiyi öğren; ilerlemeni GitHub tarzı haritada izle, arkadaşlarınla ve gruplarla yarış. Learn the top 2500 Japanese kanji with friends.";
+  "Learn hiragana, katakana and the 2500 most frequent Japanese kanji. Track your progress on a GitHub-style heatmap, level up with XP and badges, and compete with friends and groups.";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "猫漢字 Neko Kanji — Japonca Öğren | Learn Japanese",
+    default: "猫漢字 Neko Kanji — Learn Japanese Kanji",
     template: "%s | 猫漢字 Neko Kanji",
   },
   description: SITE_DESC,
   keywords: [
-    "japonca öğren",
+    "learn japanese",
     "kanji",
     "top 2500 kanji",
     "hiragana",
     "katakana",
-    "japonca kelime",
-    "learn japanese",
     "kanji practice",
+    "japanese vocabulary",
+    "kanji heatmap",
     "JLPT",
     "neko kanji",
   ],
@@ -46,22 +46,22 @@ export const metadata = {
     type: "website",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "猫漢字 Neko Kanji — Japonca Öğren",
+    title: "猫漢字 Neko Kanji — Learn Japanese Kanji",
     description: SITE_DESC,
-    locale: "tr_TR",
-    alternateLocale: ["en_US"],
+    locale: "en_US",
+    alternateLocale: ["tr_TR"],
     images: [
       {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "猫漢字 Neko Kanji — Top 2500 kanji",
+        alt: "猫漢字 Neko Kanji — Learn the top 2500 kanji",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "猫漢字 Neko Kanji — Japonca Öğren",
+    title: "猫漢字 Neko Kanji — Learn Japanese Kanji",
     description: SITE_DESC,
     images: ["/og.png"],
   },
@@ -79,7 +79,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="tr">
+    <html lang="en">
       <body className={`${nunito.variable} ${zenMaru.variable}`}>
         <ConvexClientProvider>
           <I18nProvider>

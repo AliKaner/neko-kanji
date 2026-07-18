@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Gruplar — Kanji Yarışı",
+  title: "Groups — The Kanji Race",
   description:
-    "Grup kur, davet koduyla arkadaşlarını topla ve kanji öğrenme yolculuğunda diğer gruplarla yarış.",
+    "Create a group, invite friends with a code and race other groups on the kanji learning journey.",
   alternates: { canonical: "/groups" },
 };
 

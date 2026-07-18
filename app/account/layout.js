@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Hesap — Giriş / Kayıt",
+  title: "Account — Sign In / Sign Up",
   description:
-    "Ücretsiz üye ol; kanji ilerlemen kaydedilsin, seviye atla, arkadaşlarınla ve gruplarla yarış.",
+    "Join for free; save your kanji progress, level up and compete with friends and groups.",
   alternates: { canonical: "/account" },
   robots: { index: false },
 };

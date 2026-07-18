@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Harf Öğren — Hiragana, Katakana, Kanji",
+  title: "Learn — Hiragana, Katakana & Kanji",
   description:
-    "Hiragana ve katakana tablolarını keşfet, JLPT N5 kanjilerini örnek kelimeler ve yazma pratiğiyle öğren.",
+    "Explore hiragana and katakana charts, and learn JLPT N5 kanji with example words and writing practice.",
   alternates: { canonical: "/learn" },
 };
 

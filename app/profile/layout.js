@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Profil",
+  title: "Profile",
   description:
-    "Kullanıcı profili: seviye, rozetler, kanji ilerlemesi ve gelişim haritası.",
+    "User profile: level, badges, kanji progress and activity heatmap.",
   robots: { index: false },
 };
 

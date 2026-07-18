@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Okuma — Hover Sözlüklü Japonca Metinler",
+  title: "Reading — Japanese Texts with Hover Dictionary",
   description:
-    "Seviyene uygun Japonca metinler oku; kelimelerin üzerine gelince hiragana okunuşu, romaji ve Türkçe/İngilizce anlamı görünür.",
+    "Read Japanese texts at your level; hover any word to see its hiragana reading, romaji and meaning in English or Turkish.",
   alternates: { canonical: "/read" },
 };
 

@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Pratik — Quiz ve Rastgele Karakter",
+  title: "Practice — Quizzes & Random Characters",
   description:
-    "Hiragana, katakana ve kanji quizleriyle kendini test et; her doğru cevap kanji haritanı renklendirir ve XP kazandırır.",
+    "Test yourself with hiragana, katakana and kanji quizzes; every correct answer colors your kanji map and earns XP.",
   alternates: { canonical: "/practice" },
 };
 

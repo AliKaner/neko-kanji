@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Arkadaşlar — Birlikte Kanji Öğren",
+  title: "Friends — Learn Kanji Together",
   description:
-    "Arkadaşlarını ekle, kim kaçıncı kanjide gör, ısı haritalarını karşılaştır ve sıralamada yarış.",
+    "Add friends, see which kanji they've reached, compare heatmaps and compete on the leaderboard.",
   alternates: { canonical: "/friends" },
 };
 

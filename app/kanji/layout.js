@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Kanji Haritası — Top 2500 Kanji İlerlemen",
+  title: "Kanji Map — Your Top 2500 Kanji Progress",
   description:
-    "En sık kullanılan 2500 kanjiyi GitHub tarzı ısı haritasında takip et: her doğru cevapla mavi, yeşil, mor ve altın seviyelere yüksel.",
+    "Track the 2500 most frequent kanji on a GitHub-style heatmap: level up each kanji from blue to green, purple and gold with every correct answer.",
   alternates: { canonical: "/kanji" },
 };
 
