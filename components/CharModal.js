@@ -139,7 +139,7 @@ export default function CharModal({ item, onClose }) {
 
   const isKanji = item.type === "kanji";
   const displayChar = isKanji ? item.c : item.script === "katakana" ? item.k : item.h;
-  const speakText = isKanji ? (item.kun[0] || item.on[0] || item.c).replace(/\(.*\)/, "") : item.h;
+  const speakText = isKanji ? (item.kun?.[0] || item.on?.[0] || item.c || "").replace(/\(.*\)/, "") : item.h;
   const words = isKanji
     ? wordsContainingKanji(item.c)
     : wordsStartingWith(item.script === "katakana" ? item.k : item.h);
@@ -154,10 +154,10 @@ export default function CharModal({ item, onClose }) {
             {isKanji ? (
               <>
                 <div className="reading-row"><span className="reading-label">ANLAM</span> <b>{item.m}</b></div>
-                {item.on.length > 0 && (
+                {item.on && item.on.length > 0 && (
                   <div className="reading-row"><span className="reading-label">ON-YOMİ</span> <span className="jp">{item.on.join("、")}</span> <span className="hint">({item.on.map((r) => kanaToRomaji(r)).join(", ")})</span></div>
                 )}
-                {item.kun.length > 0 && (
+                {item.kun && item.kun.length > 0 && (
                   <div className="reading-row"><span className="reading-label">KUN-YOMİ</span> <span className="jp">{item.kun.join("、")}</span> <span className="hint">({item.kun.map((r) => kanaToRomaji(r.replace(/[()]/g, ""))).join(", ")})</span></div>
                 )}
                 <div className="reading-row" style={{ marginTop: 6 }}>

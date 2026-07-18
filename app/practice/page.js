@@ -41,6 +41,7 @@ function makeLocalKanaQuestion(script) {
 }
 
 function displayChar(item) {
+  if (!item || item.error) return "";
   if (item.type === "kanji") return item.c;
   return item.script === "katakana" ? item.k : item.h;
 }
@@ -66,13 +67,21 @@ function RandomChar() {
       if (m === "kanji") {
         const res = await fetch(`/api/kanji?random=true&jlpt=${l}`);
         const data = await res.json();
-        setItem({ type: "kanji", ...data });
+        if (data && !data.error) {
+          setItem({ type: "kanji", ...data });
+        } else {
+          setItem(null);
+        }
       } else if (m === "mixed") {
         const subMode = ["hiragana", "katakana", "kanji"][Math.floor(Math.random() * 3)];
         if (subMode === "kanji") {
           const res = await fetch(`/api/kanji?random=true&jlpt=${l}`);
           const data = await res.json();
-          setItem({ type: "kanji", ...data });
+          if (data && !data.error) {
+            setItem({ type: "kanji", ...data });
+          } else {
+            setItem(null);
+          }
         } else {
           setItem(randomLocalKana(subMode));
         }
@@ -81,6 +90,7 @@ function RandomChar() {
       }
     } catch (err) {
       console.error(err);
+      setItem(null);
     } finally {
       setLoading(false);
     }
@@ -92,7 +102,7 @@ function RandomChar() {
   }, [mode, jlpt]);
 
   const words = useMemo(() => {
-    if (!item) return [];
+    if (!item || item.error) return [];
     if (item.type === "kanji") return wordsContainingKanji(item.c);
     return wordsStartingWith(item.script === "katakana" ? item.k : item.h);
   }, [item]);
@@ -259,13 +269,21 @@ function Quiz() {
       if (m === "kanji") {
         const res = await fetch(`/api/kanji?quiz=true&lang=${lang}&jlpt=${l}`);
         const data = await res.json();
-        setQ(data);
+        if (data && !data.error) {
+          setQ(data);
+        } else {
+          setQ(null);
+        }
       } else if (m === "mixed") {
         const subMode = ["hiragana", "katakana", "kanji"][Math.floor(Math.random() * 3)];
         if (subMode === "kanji") {
           const res = await fetch(`/api/kanji?quiz=true&lang=${lang}&jlpt=${l}`);
           const data = await res.json();
-          setQ(data);
+          if (data && !data.error) {
+            setQ(data);
+          } else {
+            setQ(null);
+          }
         } else {
           setQ(makeLocalKanaQuestion(subMode));
         }
@@ -274,6 +292,7 @@ function Quiz() {
       }
     } catch (err) {
       console.error(err);
+      setQ(null);
     } finally {
       setLoading(false);
     }

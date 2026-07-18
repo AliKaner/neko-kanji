@@ -74,7 +74,9 @@ export default function LearnKanjiPage() {
     try {
       const res = await fetch(`/api/kanji?random=true&jlpt=${jlpt}`);
       const data = await res.json();
-      setSelected({ type: "kanji", ...data });
+      if (data && !data.error) {
+        setSelected({ type: "kanji", ...data });
+      }
     } catch (e) {
       console.error(e);
     }
@@ -129,7 +131,7 @@ export default function LearnKanjiPage() {
                 <div
                   key={k.c}
                   className="kanji-cell"
-                  onClick={() => selectKanji(k.c)}
+                  onClick={() => setSelected({ type: "kanji", ...k })}
                   style={{ cursor: "pointer" }}
                 >
                   <span className="glyph jp">{k.c}</span>
