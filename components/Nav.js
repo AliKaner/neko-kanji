@@ -2,16 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useConvexAuth } from "convex/react";
 
 const LINKS = [
   { href: "/learn", label: "📖 Harf Öğren" },
   { href: "/practice", label: "🎲 Pratik" },
   { href: "/read", label: "📜 Okuma" },
   { href: "/dictionary", label: "🔍 Sözlük" },
+  { href: "/kanji", label: "🗾 Kanji Haritası" },
+  { href: "/friends", label: "👥 Arkadaşlar" },
+  { href: "/groups", label: "🏆 Gruplar" },
 ];
 
 export default function Nav() {
   const pathname = usePathname();
+  const { isAuthenticated } = useConvexAuth();
   return (
     <header className="topbar">
       <div className="brand">
@@ -28,6 +33,12 @@ export default function Nav() {
             {l.label}
           </Link>
         ))}
+        <Link
+          href="/account"
+          className={pathname.startsWith("/account") ? "active" : ""}
+        >
+          {isAuthenticated ? "👤 Hesabım" : "👤 Giriş"}
+        </Link>
       </nav>
     </header>
   );

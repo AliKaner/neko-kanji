@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { KANA_GROUPS, KANJI } from "@/lib/data";
 import { kanaToRomaji } from "@/lib/romaji";
 import { speak } from "@/lib/tts";
@@ -180,6 +182,8 @@ function Quiz() {
   const [q, setQ] = useState(null);
   const [picked, setPicked] = useState(null);
   const [score, setScore] = useState({ ok: 0, total: 0, streak: 0 });
+  const { isAuthenticated } = useConvexAuth();
+  const recordCorrect = useMutation(api.progress.recordCorrect);
 
   const next = (m = mode) => {
     setQ(makeQuestion(m));
@@ -201,6 +205,10 @@ function Quiz() {
       total: s.total + 1,
       streak: good ? s.streak + 1 : 0,
     }));
+    if (good && q.item.type === "kanji" && isAuthenticated) {
+      // Kanji haritasındaki sayacı artır (top 2500 listesindeyse)
+      recordCorrect({ char: q.item.c }).catch(() => {});
+    }
     if (q.item.type !== "kanji") speak(q.item.h);
   };
 
