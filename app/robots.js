@@ -1,4 +1,4 @@
-const BASE = "https://japanese-teacher-delta.vercel.app";
+const BASE = "https://neko-kanji.com";
 
 export default function robots() {
   return {

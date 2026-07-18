@@ -2,7 +2,7 @@
 
 **Learn the top 2500 Japanese kanji — and race your friends while doing it.**
 
-🔗 **Live:** [japanese-teacher-delta.vercel.app](https://japanese-teacher-delta.vercel.app)
+🔗 **Live:** [neko-kanji.com](https://neko-kanji.com)
 
 ![Neko Kanji](public/og.png)
 

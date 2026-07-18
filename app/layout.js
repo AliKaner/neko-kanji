@@ -16,7 +16,7 @@ const zenMaru = Zen_Maru_Gothic({
   variable: "--font-jp",
 });
 
-const SITE_URL = "https://japanese-teacher-delta.vercel.app";
+const SITE_URL = "https://neko-kanji.com";
 const SITE_NAME = "猫漢字 Neko Kanji";
 const SITE_DESC =
   "Learn hiragana, katakana and the 2500 most frequent Japanese kanji. Track your progress on a GitHub-style heatmap, level up with XP and badges, and compete with friends and groups.";
