@@ -16,10 +16,65 @@ const zenMaru = Zen_Maru_Gothic({
   variable: "--font-jp",
 });
 
+const SITE_URL = "https://japanese-teacher-delta.vercel.app";
+const SITE_NAME = "猫漢字 Neko Kanji";
+const SITE_DESC =
+  "Hiragana, katakana ve en sık kullanılan 2500 kanjiyi öğren; ilerlemeni GitHub tarzı haritada izle, arkadaşlarınla ve gruplarla yarış. Learn the top 2500 Japanese kanji with friends.";
+
 export const metadata = {
-  title: "猫漢字 Neko Kanji — Japonca Öğren",
-  description:
-    "Hiragana, katakana ve top 2500 kanji öğren; ilerlemeni haritada izle, arkadaşlarınla ve gruplarla yarış.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "猫漢字 Neko Kanji — Japonca Öğren | Learn Japanese",
+    template: "%s | 猫漢字 Neko Kanji",
+  },
+  description: SITE_DESC,
+  keywords: [
+    "japonca öğren",
+    "kanji",
+    "top 2500 kanji",
+    "hiragana",
+    "katakana",
+    "japonca kelime",
+    "learn japanese",
+    "kanji practice",
+    "JLPT",
+    "neko kanji",
+  ],
+  applicationName: SITE_NAME,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: "猫漢字 Neko Kanji — Japonca Öğren",
+    description: SITE_DESC,
+    locale: "tr_TR",
+    alternateLocale: ["en_US"],
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "猫漢字 Neko Kanji — Top 2500 kanji",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "猫漢字 Neko Kanji — Japonca Öğren",
+    description: SITE_DESC,
+    images: ["/og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({ children }) {
