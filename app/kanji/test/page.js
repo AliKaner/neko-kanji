@@ -168,6 +168,13 @@ export default function KanjiTestPage() {
     }
   };
 
+  // Bilmiyorsan cevabı göster: doğru sayılmaz ama öğrenirsin
+  const reveal = () => {
+    if (!question || result) return;
+    setResult("shown");
+    setSession((s) => ({ ...s, total: s.total + 1 }));
+  };
+
   const displayAnswers = question
     ? [...new Set(question.answers)].slice(0, 6).join(" · ")
     : "";
@@ -239,6 +246,16 @@ export default function KanjiTestPage() {
                 </p>
               </div>
             )}
+            {result === "shown" && (
+              <div className="ktest-no">
+                <p className="hint" style={{ margin: "8px 0 2px" }}>
+                  {t("ktest.answerIs")}
+                </p>
+                <p style={{ margin: 0 }}>
+                  <b>{displayAnswers}</b>
+                </p>
+              </div>
+            )}
 
             <div className="ktest-actions">
               {result ? (
@@ -246,9 +263,14 @@ export default function KanjiTestPage() {
                   {t("ktest.next")}
                 </button>
               ) : (
-                <button className="btn secondary" onClick={nextQuestion}>
-                  {t("ktest.skip")}
-                </button>
+                <>
+                  <button className="btn secondary" onClick={reveal}>
+                    {t("ktest.reveal")}
+                  </button>
+                  <button className="btn secondary" onClick={nextQuestion}>
+                    {t("ktest.skip")}
+                  </button>
+                </>
               )}
             </div>
           </>

@@ -933,7 +933,12 @@ h1 { animation: rise 0.3s ease both; }
   margin: 10px 0 0;
 }
 .ktest-no { text-align: center; }
-.ktest-actions { text-align: center; margin-top: 14px; }
+.ktest-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
 
 /* ---------- Font Seçici ---------- */
 .font-picker {
