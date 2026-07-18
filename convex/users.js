@@ -1,4 +1,4 @@
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { statsOf, findFriendship } from "./helpers";
@@ -14,8 +14,40 @@ export const viewer = query({
   },
 });
 
-// Herkese açık profil: isim, istatistikler, ısı haritası ve
-// ziyaretçiyle olan arkadaşlık durumu.
+// Profil fotoğrafı / wallpaper yükleme akışı
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Giriş yapmalısın.");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const setImage = mutation({
+  args: {
+    kind: v.union(v.literal("avatar"), v.literal("wallpaper")),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, { kind, storageId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Giriş yapmalısın.");
+    const user = await ctx.db.get(userId);
+    const field = kind === "avatar" ? "avatarId" : "wallpaperId";
+    // Eski görseli sil ki depo şişmesin
+    if (user?.[field]) {
+      try {
+        await ctx.storage.delete(user[field]);
+      } catch (e) {
+        // eski dosya zaten yoksa sorun değil
+      }
+    }
+    await ctx.db.patch(userId, { [field]: storageId });
+  },
+});
+
+// Herkese açık profil: isim, görseller, seviye/XP, istatistikler,
+// ısı haritası, günlük gelişim ve son aksiyonlar.
 export const profile = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
@@ -42,14 +74,37 @@ export const profile = query({
         };
     }
 
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(12);
+
+    const daily = await ctx.db
+      .query("dailyStats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
     return {
       userId,
       name: user.name || user.email,
       isMe: me === userId,
       signedIn: !!me,
+      avatarUrl: user.avatarId ? await ctx.storage.getUrl(user.avatarId) : null,
+      wallpaperUrl: user.wallpaperId
+        ? await ctx.storage.getUrl(user.wallpaperId)
+        : null,
       stats,
       map: rows.map((r) => ({ rank: r.rank, count: r.count })),
       friendship,
+      activities: activities.map((a) => ({
+        type: a.type,
+        char: a.char,
+        level: a.level,
+        name: a.name,
+        time: a._creationTime,
+      })),
+      daily: daily.map((d) => ({ day: d.day, correct: d.correct })),
     };
   },
 });

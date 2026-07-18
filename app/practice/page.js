@@ -4,16 +4,18 @@ import { useMemo, useState } from "react";
 import { useConvexAuth, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { KANA_GROUPS, KANJI } from "@/lib/data";
+import { KANJI_EN, WORDS_EN } from "@/lib/en";
 import { kanaToRomaji } from "@/lib/romaji";
 import { speak } from "@/lib/tts";
 import { wordsStartingWith, wordsContainingKanji } from "@/lib/words";
+import { useI18n } from "@/lib/i18n";
 import CharModal from "@/components/CharModal";
 
 const MODES = [
   { id: "hiragana", label: "ひらがな" },
   { id: "katakana", label: "カタカナ" },
   { id: "kanji", label: "漢字" },
-  { id: "mixed", label: "Karışık" },
+  { id: "mixed", label: "MIX" },
 ];
 
 const ALL_KANA = KANA_GROUPS.flatMap((g) => g.rows.flat()).filter(Boolean);
@@ -30,13 +32,22 @@ function displayChar(item) {
   return item.script === "katakana" ? item.k : item.h;
 }
 
-function answerOf(item) {
-  // Kana için romaji, kanji için Türkçe anlam
-  return item.type === "kanji" ? item.m : item.r;
+function kanjiMeaning(item, lang) {
+  return lang === "en" ? KANJI_EN[item.c] || item.m : item.m;
+}
+
+function wordMeaning(w, lang) {
+  return lang === "en" ? WORDS_EN[w.w] || w.m : w.m;
+}
+
+function answerOf(item, lang) {
+  // Kana için romaji, kanji için seçili dilde anlam
+  return item.type === "kanji" ? kanjiMeaning(item, lang) : item.r;
 }
 
 // ---------- Rastgele harf kartı ----------
 function RandomChar() {
+  const { t, lang } = useI18n();
   const [mode, setMode] = useState("hiragana");
   const [item, setItem] = useState(null);
   const [revealed, setRevealed] = useState(false);
@@ -55,7 +66,7 @@ function RandomChar() {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>🎲 Rastgele Harf</h2>
+      <h2 style={{ marginTop: 0 }}>{t("practice.random")}</h2>
       <div className="tabs">
         {MODES.map((m) => (
           <button
@@ -81,7 +92,7 @@ function RandomChar() {
             <div className="reveal">
               {item.type === "kanji" ? (
                 <>
-                  <b>{item.m}</b>{" "}
+                  <b>{kanjiMeaning(item, lang)}</b>{" "}
                   <span className="romaji">
                     {[...item.on, ...item.kun].join("、")}
                   </span>
@@ -105,14 +116,14 @@ function RandomChar() {
                     )
                   }
                 >
-                  🔊 Dinle
+                  {t("practice.listen")}
                 </button>
               </div>
             </div>
           ) : (
             <div style={{ textAlign: "center", margin: "6px 0 14px" }}>
               <button className="btn secondary" onClick={() => setRevealed(true)}>
-                👁️ Okunuşu Göster
+                {t("practice.reveal")}
               </button>
             </div>
           )}
@@ -121,8 +132,8 @@ function RandomChar() {
             <div className="word-list">
               <div className="trace-title">
                 {item.type === "kanji"
-                  ? "Bu kanjiyi içeren kelimeler:"
-                  : "Bu harfle başlayan kelimeler:"}
+                  ? t("practice.wordsWithKanji")
+                  : t("practice.wordsStarting")}
               </div>
               {words.slice(0, 4).map((w) => (
                 <div
@@ -134,7 +145,7 @@ function RandomChar() {
                   <span className="w jp">{w.w}</span>
                   <span className="r jp">{w.kana}</span>
                   <span className="romaji">{kanaToRomaji(w.kana)}</span>
-                  <span className="m">{w.m}</span>
+                  <span className="m">{wordMeaning(w, lang)}</span>
                 </div>
               ))}
             </div>
@@ -142,14 +153,13 @@ function RandomChar() {
         </>
       ) : (
         <p className="hint" style={{ textAlign: "center" }}>
-          Butona bas, rastgele bir karakter gelsin. Okunuşunu tahmin etmeye
-          çalış!
+          {t("practice.hint")}
         </p>
       )}
 
       <div style={{ textAlign: "center", marginTop: 14 }}>
         <button className="btn" onClick={next}>
-          🎲 Yeni Harf Gönder
+          {t("practice.newChar")}
         </button>
       </div>
 
@@ -159,14 +169,15 @@ function RandomChar() {
 }
 
 // ---------- Çoktan seçmeli quiz ----------
-function makeQuestion(mode) {
+function makeQuestion(mode, lang) {
   const item = randomItem(mode);
-  const correct = answerOf(item);
+  const correct = answerOf(item, lang);
   const options = new Set([correct]);
   let guard = 0;
   while (options.size < 4 && guard++ < 200) {
     const other = answerOf(
-      randomItem(mode === "mixed" ? (item.type === "kanji" ? "kanji" : "hiragana") : mode)
+      randomItem(mode === "mixed" ? (item.type === "kanji" ? "kanji" : "hiragana") : mode),
+      lang
     );
     options.add(other);
   }
@@ -178,6 +189,7 @@ function makeQuestion(mode) {
 }
 
 function Quiz() {
+  const { t, lang } = useI18n();
   const [mode, setMode] = useState("hiragana");
   const [q, setQ] = useState(null);
   const [picked, setPicked] = useState(null);
@@ -186,7 +198,7 @@ function Quiz() {
   const recordCorrect = useMutation(api.progress.recordCorrect);
 
   const next = (m = mode) => {
-    setQ(makeQuestion(m));
+    setQ(makeQuestion(m, lang));
     setPicked(null);
   };
 
@@ -214,7 +226,7 @@ function Quiz() {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>❓ Quiz</h2>
+      <h2 style={{ marginTop: 0 }}>{t("practice.quiz")}</h2>
       <div className="tabs">
         {MODES.map((m) => (
           <button
@@ -231,7 +243,9 @@ function Quiz() {
         <>
           <div className="big-char jp">{displayChar(q.item)}</div>
           <p className="hint" style={{ textAlign: "center", margin: 0 }}>
-            {q.item.type === "kanji" ? "Bu kanjinin anlamı ne?" : "Bu harfin okunuşu ne?"}
+            {q.item.type === "kanji"
+              ? t("practice.quizHintKanji")
+              : t("practice.quizHintKana")}
           </p>
           <div className="quiz-options">
             {q.options.map((opt) => (
@@ -256,20 +270,24 @@ function Quiz() {
           {picked !== null && (
             <div style={{ textAlign: "center", marginTop: 14 }}>
               <button className="btn" onClick={() => next()}>
-                Sonraki Soru →
+                {t("practice.next")}
               </button>
             </div>
           )}
           <div className="scoreboard">
-            <span>Doğru: <b>{score.ok}</b> / {score.total}</span>
-            <span>Seri: <b>{score.streak}</b> 🔥</span>
+            <span>
+              {t("practice.correct")}: <b>{score.ok}</b> / {score.total}
+            </span>
+            <span>
+              {t("practice.streak")}: <b>{score.streak}</b> 🔥
+            </span>
           </div>
         </>
       ) : (
         <div style={{ textAlign: "center" }}>
-          <p className="hint">Karakteri gör, doğru okunuşu / anlamı seç.</p>
+          <p className="hint">{t("practice.quizIntro")}</p>
           <button className="btn" onClick={() => next()}>
-            ▶ Quize Başla
+            {t("practice.start")}
           </button>
         </div>
       )}
@@ -278,13 +296,11 @@ function Quiz() {
 }
 
 export default function PracticePage() {
+  const { t } = useI18n();
   return (
     <div>
-      <h1>🎲 Pratik</h1>
-      <p className="subtitle">
-        Rastgele karakterlerle kendini test et — o harfle başlayan kelimeleri
-        keşfet.
-      </p>
+      <h1>{t("practice.title")}</h1>
+      <p className="subtitle">{t("practice.intro")}</p>
       <div className="practice-grid">
         <RandomChar />
         <Quiz />

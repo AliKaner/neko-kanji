@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { KANA_GROUPS, KANJI } from "@/lib/data";
+import { KANJI_EN, GROUP_EN } from "@/lib/en";
+import { useI18n } from "@/lib/i18n";
 import CharModal from "@/components/CharModal";
 
 const TABS = [
@@ -11,11 +13,14 @@ const TABS = [
 ];
 
 function KanaTable({ script, onSelect }) {
+  const { lang } = useI18n();
   return (
     <>
       {KANA_GROUPS.map((group) => (
         <section key={group.name}>
-          <div className="group-title">{group.name}</div>
+          <div className="group-title">
+            {lang === "en" ? GROUP_EN[group.name] || group.name : group.name}
+          </div>
           <div className="kana-grid">
             {group.rows.flat().map((cell, i) =>
               cell ? (
@@ -41,9 +46,10 @@ function KanaTable({ script, onSelect }) {
 }
 
 function KanjiTable({ onSelect }) {
+  const { t, lang } = useI18n();
   return (
     <>
-      <div className="group-title">JLPT N5 Seviyesi — {KANJI.length} Kanji</div>
+      <div className="group-title">{t("learn.jlpt", { n: KANJI.length })}</div>
       <div className="kanji-grid">
         {KANJI.map((k) => (
           <div
@@ -52,7 +58,9 @@ function KanjiTable({ onSelect }) {
             onClick={() => onSelect({ type: "kanji", ...k })}
           >
             <span className="glyph jp">{k.c}</span>
-            <span className="meaning">{k.m}</span>
+            <span className="meaning">
+              {lang === "en" ? KANJI_EN[k.c] || k.m : k.m}
+            </span>
           </div>
         ))}
       </div>
@@ -61,16 +69,14 @@ function KanjiTable({ onSelect }) {
 }
 
 export default function LearnPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState("hiragana");
   const [selected, setSelected] = useState(null);
 
   return (
     <div>
-      <h1>📖 Harf Öğren</h1>
-      <p className="subtitle">
-        Bir karaktere tıkla: okunuşu, örnek kelimeleri ve yazma pratiği alanı
-        açılır.
-      </p>
+      <h1>{t("learn.title")}</h1>
+      <p className="subtitle">{t("learn.subtitle")}</p>
       <div className="tabs">
         {TABS.map((t) => (
           <button

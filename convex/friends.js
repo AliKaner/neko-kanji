@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { statsOf, findFriendship } from "./helpers";
+import { statsOf, findFriendship, logActivity } from "./helpers";
 
 export const sendRequestTo = mutation({
   args: { userId: v.id("users") },
@@ -34,8 +34,21 @@ export const respond = mutation({
     if (!me) throw new Error("Giriş yapmalısın.");
     const f = await ctx.db.get(friendshipId);
     if (!f || f.addresseeId !== me) throw new Error("İstek bulunamadı.");
-    if (accept) await ctx.db.patch(friendshipId, { status: "accepted" });
-    else await ctx.db.delete(friendshipId);
+    if (accept) {
+      await ctx.db.patch(friendshipId, { status: "accepted" });
+      const meUser = await ctx.db.get(me);
+      const other = await ctx.db.get(f.requesterId);
+      await logActivity(ctx, me, {
+        type: "friend",
+        name: other?.name || other?.email || "?",
+      });
+      await logActivity(ctx, f.requesterId, {
+        type: "friend",
+        name: meUser?.name || meUser?.email || "?",
+      });
+    } else {
+      await ctx.db.delete(friendshipId);
+    }
   },
 });
 

@@ -24,8 +24,31 @@ export async function findFriendship(ctx, a, b) {
     .unique();
 }
 
+// XP → kullanıcı seviyesi. Seviye l, [10*(l-1)², 10*l²) XP aralığını kapsar.
+export function levelFromXp(xp) {
+  return Math.floor(Math.sqrt(Math.max(0, xp) / 10)) + 1;
+}
+
+export function xpForLevel(level) {
+  return 10 * (level - 1) * (level - 1);
+}
+
+// Seviye aralığına göre unvan anahtarı (i18n'de karşılığı var)
+export function titleKeyOf(level) {
+  if (level >= 50) return "title.sage";
+  if (level >= 35) return "title.master";
+  if (level >= 20) return "title.sensei";
+  if (level >= 10) return "title.samurai";
+  if (level >= 5) return "title.student";
+  return "title.novice";
+}
+
+export async function logActivity(ctx, userId, activity) {
+  await ctx.db.insert("activities", { userId, ...activity });
+}
+
 // Bir kullanıcının özet istatistikleri: öğrenilen kanji sayısı, puan,
-// frekans sırasında kesintisiz gelinen nokta.
+// frekans sırasında kesintisiz gelinen nokta, XP ve seviye.
 export async function statsOf(ctx, userId) {
   const rows = await ctx.db
     .query("progress")
@@ -41,10 +64,18 @@ export async function statsOf(ctx, userId) {
   }
   let consecutive = 0;
   while (learnedRanks.has(consecutive + 1)) consecutive++;
+  const user = await ctx.db.get(userId);
+  const xp = user?.xp || 0;
+  const level = levelFromXp(xp);
   return {
     learned: learnedRanks.size,
     score,
     consecutive,
     position: consecutive + 1,
+    xp,
+    level,
+    titleKey: titleKeyOf(level),
+    levelStartXp: xpForLevel(level),
+    nextLevelXp: xpForLevel(level + 1),
   };
 }

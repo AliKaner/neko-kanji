@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { statsOf } from "./helpers";
+import { statsOf, logActivity } from "./helpers";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -34,6 +34,7 @@ export const create = mutation({
       ownerId: me,
     });
     await ctx.db.insert("groupMembers", { groupId, userId: me });
+    await logActivity(ctx, me, { type: "groupCreate", name: trimmed });
     return { groupId, inviteCode };
   },
 });
@@ -56,6 +57,7 @@ export const join = mutation({
       .unique();
     if (existing) throw new Error("Zaten bu gruptasın.");
     await ctx.db.insert("groupMembers", { groupId: group._id, userId: me });
+    await logActivity(ctx, me, { type: "groupJoin", name: group.name });
     return { groupId: group._id, name: group.name };
   },
 });
