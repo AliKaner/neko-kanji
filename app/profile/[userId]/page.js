@@ -347,10 +347,15 @@ export default function ProfilePage() {
           </div>
           <div className="profile-header-actions">
             {profile.isMe ? (
-              <ImageUploadButton
-                kind="avatar"
-                label={t("profile.changeAvatar")}
-              />
+              <span className="friend-actions">
+                <ImageUploadButton
+                  kind="avatar"
+                  label={t("profile.changeAvatar")}
+                />
+                <Link className="btn secondary small" href="/account">
+                  ⚙️ {t("account.title").replace("👤 ", "")}
+                </Link>
+              </span>
             ) : (
               <FriendButton profile={profile} />
             )}

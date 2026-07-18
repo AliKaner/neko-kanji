@@ -111,7 +111,10 @@ function SearchBox() {
 export default function Nav() {
   const pathname = usePathname();
   const { isAuthenticated } = useConvexAuth();
+  const viewer = useQuery(api.users.viewer);
   const { t, lang, setLang } = useI18n();
+  const accountHref =
+    isAuthenticated && viewer ? `/profile/${viewer._id}` : "/account";
 
   return (
     <header className="topbar">
@@ -140,12 +143,15 @@ export default function Nav() {
             </button>
           </div>
           <Link
-            href="/account"
+            href={accountHref}
             className={`nav-account ${
-              pathname.startsWith("/account") ? "active" : ""
+              pathname.startsWith("/account") ||
+              (viewer && pathname === `/profile/${viewer._id}`)
+                ? "active"
+                : ""
             }`}
           >
-            {isAuthenticated ? t("nav.account") : t("nav.login")}
+            {isAuthenticated ? t("nav.profile") : t("nav.login")}
           </Link>
         </div>
       </div>
