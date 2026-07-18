@@ -153,7 +153,21 @@ export default function CharModal({ item, onClose }) {
           <div className="modal-info">
             {isKanji ? (
               <>
-                <div className="reading-row"><span className="reading-label">ANLAM</span> <b>{item.m}</b></div>
+                <div className="reading-row">
+                  <span className="reading-label">ANLAM</span>{" "}
+                  <b>
+                    {item.m_tr ||
+                      item.m ||
+                      (item.meanings || []).join(", ") ||
+                      "—"}
+                  </b>
+                </div>
+                {item.m_tr && item.meanings?.length > 0 && (
+                  <div className="reading-row">
+                    <span className="reading-label">EN</span>{" "}
+                    <span className="hint">{item.meanings.join(", ")}</span>
+                  </div>
+                )}
                 {item.on && item.on.length > 0 && (
                   <div className="reading-row"><span className="reading-label">ON-YOMİ</span> <span className="jp">{item.on.join("、")}</span> <span className="hint">({item.on.map((r) => kanaToRomaji(r)).join(", ")})</span></div>
                 )}
@@ -200,7 +214,7 @@ export default function CharModal({ item, onClose }) {
 
         <TraceBox char={displayChar} />
 
-        {isKanji && (
+        {isKanji && item.ex && (
           <div className="word-list">
             <div className="trace-title">Örnek kelime:</div>
             <div className="word-item" onClick={() => speak(item.ex.r)} title="Dinlemek için tıkla">
