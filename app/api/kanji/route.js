@@ -1,11 +1,15 @@
 import kanjiData from "@/app/kanji-top-2500.json";
 import { KANJI } from "@/lib/data";
 
-// Precompile kanji list from json and merge N5 Turkish meanings/examples
-let kanjiArray = [];
+// JSON tam bir kanji sözlüğü (~13k entry) içerir; frekans verisi olan 2501
+// tanesi "top 2500" setidir. Liste/rastgele/quiz yalnızca bu seti kullanır —
+// frekanssız girdilerin çoğunda anlam/okunuş eksiktir. Tekil ?c= sorgusu ise
+// (modal detayları için) tüm sözlükten bakabilir.
+let kanjiArray = []; // sadece frekanslı top 2501
+const kanjiByChar = new Map(); // tüm sözlük
 for (const [char, info] of Object.entries(kanjiData)) {
   const n5 = KANJI.find((k) => k.c === char);
-  kanjiArray.push({
+  const item = {
     c: char,
     rank: info.freq || info.rank || 9999,
     meanings: info.meanings || [],
@@ -17,7 +21,9 @@ for (const [char, info] of Object.entries(kanjiData)) {
     m: n5 ? n5.m : (info.meanings ? info.meanings.join(", ") : ""),
     m_tr: n5 ? n5.m : null,
     ex: n5 ? n5.ex : null,
-  });
+  };
+  kanjiByChar.set(char, item);
+  if (info.freq) kanjiArray.push(item);
 }
 // Sort by frequency rank ascending
 kanjiArray.sort((a, b) => a.rank - b.rank);
@@ -25,10 +31,10 @@ kanjiArray.sort((a, b) => a.rank - b.rank);
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
 
-  // 1. Single lookup by character
+  // 1. Single lookup by character (tüm sözlükten)
   const char = searchParams.get("c");
   if (char) {
-    const item = kanjiArray.find((k) => k.c === char);
+    const item = kanjiByChar.get(char);
     if (!item) {
       return Response.json({ error: "Kanji bulunamadı" }, { status: 404 });
     }
