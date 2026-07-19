@@ -173,24 +173,38 @@ export default function KanjiTestPage() {
     return m;
   }, [myMap]);
 
-  // Soru için kanji seç: %70 sıradaki öğrenilmemişler, %30 pekiştirme
+  // Az önce sorulanları tekrar sormamak için son 10 kanjiyi hatırla
+  const recentRef = useRef([]);
+
+  // Soru için kanji seç: %70 sıradaki öğrenilmemişler, %30 pekiştirme.
+  // Son sorulan kanjiler havuzdan çıkarılır ki sorular çeşitlensin.
   const pickChar = useCallback(() => {
     if (!kanjiList?.length) return null;
+    const recent = new Set(recentRef.current);
     const unlearned = [];
     const review = [];
     for (const k of kanjiList) {
       const c = countByRank.get(k.rank) || 0;
       if (c === 0) {
-        if (unlearned.length < 15) unlearned.push(k);
+        if (unlearned.length < 25) unlearned.push(k);
       } else if (c < 20) {
         review.push(k);
       }
     }
+    const fresh = (arr) => {
+      const f = arr.filter((k) => !recent.has(k.char));
+      return f.length ? f : arr; // hepsi yakın zamanda sorulduysa mecburen aynısı
+    };
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    let chosen;
     if (review.length && (Math.random() < 0.3 || !unlearned.length))
-      return pick(review);
-    if (unlearned.length) return pick(unlearned);
-    return pick(kanjiList);
+      chosen = pick(fresh(review));
+    else if (unlearned.length) chosen = pick(fresh(unlearned));
+    else chosen = pick(fresh(kanjiList));
+    if (chosen) {
+      recentRef.current = [...recentRef.current, chosen.char].slice(-10);
+    }
+    return chosen;
   }, [kanjiList, countByRank]);
 
   const nextQuestion = useCallback(async () => {
