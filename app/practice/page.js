@@ -424,6 +424,14 @@ function SetupPanel({ config, setConfig }) {
                     {k.c} <span className="kchip-x">✕</span>
                   </button>
                 ))}
+                <button
+                  className="btn secondary small"
+                  onClick={() =>
+                    setConfig((c) => ({ ...c, customKanji: [] }))
+                  }
+                >
+                  {t("practice.clearAll")}
+                </button>
               </div>
             )}
             {showKanjiBrowser && (
