@@ -9,6 +9,9 @@ import { kanaToRomaji } from "@/lib/romaji";
 import { WORDS_EN } from "@/lib/en";
 import { speak } from "@/lib/tts";
 
+const ALL_MODES = ["meaning", "reading", "word", "revMeaning", "revReading"];
+const DEFAULT_MODES = ["meaning", "reading", "revMeaning", "revReading"];
+
 // "た.べる" / "ひと(つ)" / "-び" → "たべる" gibi temiz okunuş
 function cleanReading(r) {
   return (r || "")
@@ -46,9 +49,9 @@ function readingAnswers(item) {
 
 function meaningAnswers(item) {
   const out = new Set();
-  for (const tk of tokens(item.m_tr || "")) out.add(tk);
+  // İngilizce anlamlar esas; Türkçe bilenler için m_tr de kabul edilir
   for (const m of item.meanings || []) for (const tk of tokens(m)) out.add(tk);
-  for (const tk of tokens(item.m || "")) out.add(tk);
+  for (const tk of tokens(item.m_tr || "")) out.add(tk);
   return [...out].filter(Boolean);
 }
 
@@ -58,6 +61,15 @@ function wordAnswers(item) {
   const en = WORDS_EN[item.ex?.w];
   if (en) for (const tk of tokens(en)) out.add(tk);
   return [...out].filter(Boolean);
+}
+
+function primaryRomaji(item) {
+  const rs = [...(item.on || []), ...(item.kun || [])]
+    .map((r) => cleanReading(r))
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((r) => kanaToRomaji(r));
+  return [...new Set(rs)].join(" / ");
 }
 
 // Cevap açıklaması: TR + EN anlam, okunuşlar (kana + romaji), kelime bilgisi
@@ -74,6 +86,11 @@ function AnswerInfo({ q }) {
 
   return (
     <div className="ktest-answer">
+      {q.mode.startsWith("rev") && (
+        <div className="jp ktest-answer-word" style={{ fontSize: "2rem" }}>
+          {item.c}
+        </div>
+      )}
       {q.mode === "word" && item.ex && (
         <div className="jp ktest-answer-word">
           {item.ex.w} 「{item.ex.r}」{" "}
@@ -114,12 +131,41 @@ export default function KanjiTestPage() {
   const myMap = useQuery(api.progress.myMap);
   const recordCorrect = useMutation(api.progress.recordCorrect);
 
-  const [question, setQuestion] = useState(null); // { item, mode, answers }
-  const [input, setInput] = useState(null);
-  const [result, setResult] = useState(null); // "ok" | "no"
+  const [modes, setModes] = useState(DEFAULT_MODES);
+  const [modesLoaded, setModesLoaded] = useState(false);
+  const [question, setQuestion] = useState(null);
+  const [input, setInput] = useState("");
+  const [picked, setPicked] = useState(null); // seçmeli modlarda tıklanan kanji
+  const [result, setResult] = useState(null); // "ok" | "no" | "shown"
   const [session, setSession] = useState({ ok: 0, total: 0 });
   const [loadingQ, setLoadingQ] = useState(false);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("ktestModes") || "null");
+      if (Array.isArray(saved)) {
+        const valid = saved.filter((m) => ALL_MODES.includes(m));
+        if (valid.length) setModes(valid);
+      }
+    } catch {}
+    setModesLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (modesLoaded)
+      window.localStorage.setItem("ktestModes", JSON.stringify(modes));
+  }, [modes, modesLoaded]);
+
+  const toggleMode = (m) => {
+    setModes((cur) => {
+      if (cur.includes(m)) {
+        if (cur.length === 1) return cur; // en az bir tip
+        return cur.filter((x) => x !== m);
+      }
+      return [...cur, m];
+    });
+  };
 
   const countByRank = useMemo(() => {
     const m = new Map();
@@ -153,39 +199,76 @@ export default function KanjiTestPage() {
     setLoadingQ(true);
     setResult(null);
     setInput("");
+    setPicked(null);
     try {
       const res = await fetch(`/api/kanji?c=${encodeURIComponent(chosen.char)}`);
       const item = await res.json();
       if (!item || item.error) throw new Error("kanji yok");
 
-      const modes = [];
-      if (meaningAnswers(item).length) modes.push("meaning");
-      if (readingAnswers(item).length) modes.push("reading");
-      if (item.ex && wordAnswers(item).length) modes.push("word");
-      const mode = modes[Math.floor(Math.random() * modes.length)] || "meaning";
-      const answers =
-        mode === "meaning"
-          ? meaningAnswers(item)
-          : mode === "reading"
-          ? readingAnswers(item)
-          : wordAnswers(item);
-      setQuestion({ item, mode, answers });
+      // Bu kanji için uygulanabilir modlar (kullanıcının seçtikleriyle kesişim)
+      const usable = modes.filter((m) => {
+        if (m === "meaning") return meaningAnswers(item).length > 0;
+        if (m === "reading") return readingAnswers(item).length > 0;
+        if (m === "word") return item.ex && wordAnswers(item).length > 0;
+        if (m === "revMeaning") return item.meanings?.length > 0;
+        if (m === "revReading") return primaryRomaji(item).length > 0;
+        return false;
+      });
+      const mode = usable[Math.floor(Math.random() * usable.length)];
+      if (!mode) {
+        setLoadingQ(false);
+        return nextQuestion();
+      }
+
+      if (mode === "revMeaning" || mode === "revReading") {
+        // 3 çeldirici kanji seç
+        const opts = new Set([chosen.char]);
+        let guard = 0;
+        while (opts.size < 4 && guard++ < 100) {
+          const other = kanjiList[Math.floor(Math.random() * kanjiList.length)];
+          opts.add(other.char);
+        }
+        setQuestion({
+          kind: "choice",
+          item,
+          mode,
+          prompt:
+            mode === "revMeaning"
+              ? item.meanings.slice(0, 2).join(", ")
+              : primaryRomaji(item),
+          options: [...opts].sort(() => Math.random() - 0.5),
+        });
+      } else {
+        const answers =
+          mode === "meaning"
+            ? meaningAnswers(item)
+            : mode === "reading"
+            ? readingAnswers(item)
+            : wordAnswers(item);
+        setQuestion({ kind: "typed", item, mode, answers });
+      }
     } catch (e) {
       setQuestion(null);
     } finally {
       setLoadingQ(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [pickChar]);
+  }, [pickChar, modes, kanjiList]);
 
   useEffect(() => {
-    if (kanjiList?.length && myMap !== undefined && question === null && !loadingQ) {
+    if (
+      modesLoaded &&
+      kanjiList?.length &&
+      myMap !== undefined &&
+      question === null &&
+      !loadingQ
+    ) {
       nextQuestion();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kanjiList, myMap]);
+  }, [kanjiList, myMap, modesLoaded]);
 
-  if (isLoading || kanjiList === undefined) {
+  if (isLoading || kanjiList === undefined || !modesLoaded) {
     return <p className="hint">{t("loading")}</p>;
   }
 
@@ -202,31 +285,55 @@ export default function KanjiTestPage() {
     );
   }
 
+  const finish = (ok) => {
+    setResult(ok ? "ok" : "no");
+    setSession((s) => ({ ok: s.ok + (ok ? 1 : 0), total: s.total + 1 }));
+    if (ok) recordCorrect({ char: question.item.c }).catch(() => {});
+  };
+
   const check = (e) => {
     e?.preventDefault();
     if (!question || result) return;
     const guess = normalize(input);
     if (!guess) return;
-    const ok = question.answers.includes(guess);
-    setResult(ok ? "ok" : "no");
-    setSession((s) => ({ ok: s.ok + (ok ? 1 : 0), total: s.total + 1 }));
-    if (ok) {
-      recordCorrect({ char: question.item.c }).catch(() => {});
-    }
+    finish(question.answers.includes(guess));
   };
 
-  // Bilmiyorsan cevabı göster: doğru sayılmaz ama öğrenirsin
-  const reveal = () => {
+  const pickKanji = (c) => {
     if (!question || result) return;
-    setResult("shown");
-    setSession((s) => ({ ...s, total: s.total + 1 }));
+    setPicked(c);
+    finish(c === question.item.c);
   };
 
+  const promptText = question
+    ? {
+        meaning: t("ktest.modeMeaning"),
+        reading: t("ktest.modeReading"),
+        word: t("ktest.modeWord"),
+        revMeaning: t("ktest.modeRevMeaning"),
+        revReading: t("ktest.modeRevReading"),
+      }[question.mode]
+    : "";
 
   return (
     <div>
       <h1>{t("ktest.title")}</h1>
       <p className="subtitle">{t("ktest.subtitle")}</p>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <span className="setup-label">{t("ktest.modes")}</span>
+        <div className="tabs" style={{ margin: "8px 0 0" }}>
+          {ALL_MODES.map((m) => (
+            <button
+              key={m}
+              className={`tab ${modes.includes(m) ? "active" : ""}`}
+              onClick={() => toggleMode(m)}
+            >
+              {t(`ktest.m.${m}`)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="card ktest-card">
         {loadingQ || !question ? (
@@ -240,7 +347,9 @@ export default function KanjiTestPage() {
               </span>
             </div>
 
-            {question.mode === "word" && question.item.ex ? (
+            {question.kind === "choice" ? (
+              <div className="ktest-prompt">{question.prompt}</div>
+            ) : question.mode === "word" && question.item.ex ? (
               <div
                 className="big-char jp ktest-word"
                 onClick={() => speak(question.item.ex.r)}
@@ -253,29 +362,48 @@ export default function KanjiTestPage() {
             )}
 
             <p className="hint" style={{ textAlign: "center", margin: "0 0 12px" }}>
-              {question.mode === "meaning"
-                ? t("ktest.modeMeaning")
-                : question.mode === "reading"
-                ? t("ktest.modeReading")
-                : t("ktest.modeWord")}
+              {promptText}
             </p>
 
-            <form onSubmit={check} className="inline-form ktest-form">
-              <input
-                ref={inputRef}
-                className="input"
-                value={input || ""}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={t("ktest.answerPh")}
-                disabled={!!result}
-                autoFocus
-              />
-              {!result && (
-                <button className="btn" type="submit">
-                  {t("ktest.check")}
-                </button>
-              )}
-            </form>
+            {question.kind === "typed" ? (
+              <form onSubmit={check} className="inline-form ktest-form">
+                <input
+                  ref={inputRef}
+                  className="input"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={t("ktest.answerPh")}
+                  disabled={!!result}
+                  autoFocus
+                />
+                {!result && (
+                  <button className="btn" type="submit">
+                    {t("ktest.check")}
+                  </button>
+                )}
+              </form>
+            ) : (
+              <div className="ktest-choices jp">
+                {question.options.map((c) => (
+                  <button
+                    key={c}
+                    className={`ktest-choice ${
+                      result
+                        ? c === question.item.c
+                          ? "correct"
+                          : c === picked
+                          ? "wrong"
+                          : ""
+                        : ""
+                    }`}
+                    disabled={!!result}
+                    onClick={() => pickKanji(c)}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {result === "ok" && (
               <>
@@ -307,7 +435,13 @@ export default function KanjiTestPage() {
                 </button>
               ) : (
                 <>
-                  <button className="btn secondary" onClick={reveal}>
+                  <button
+                    className="btn secondary"
+                    onClick={() => {
+                      setResult("shown");
+                      setSession((s) => ({ ...s, total: s.total + 1 }));
+                    }}
+                  >
                     {t("ktest.reveal")}
                   </button>
                   <button className="btn secondary" onClick={nextQuestion}>

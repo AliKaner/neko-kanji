@@ -925,6 +925,38 @@ h1 { animation: rise 0.3s ease both; }
   margin-bottom: 6px;
 }
 .ktest-form { justify-content: center; }
+.ktest-prompt {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 18px 0 10px;
+}
+.ktest-choices {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 8px 0;
+}
+.ktest-choice {
+  font-size: 2rem;
+  padding: 14px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.ktest-choice:not(:disabled):hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.ktest-choice.correct { background: var(--ok); border-color: var(--ok); color: #fff; }
+.ktest-choice.wrong { background: var(--bad); border-color: var(--bad); color: #fff; }
+@media (max-width: 640px) {
+  .ktest-choices { grid-template-columns: repeat(2, 1fr); }
+}
 .ktest-word { font-size: 2.6rem; cursor: pointer; }
 .ktest-ok {
   color: var(--ok);
